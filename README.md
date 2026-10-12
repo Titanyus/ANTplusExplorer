@@ -45,7 +45,7 @@ Die Diagnose unterscheidet nicht gefunden, deaktiviert und installiert, aber vom
 
 Die App verändert **keinen Widerstand** und sendet keine Leistungs-, Start-/Stop- oder Kalibrierbefehle. BLE-Schreibzugriffe aktivieren ausschließlich standardisierte Datenbenachrichtigungen. Manche Geräte benötigen Herstellerbefehle; unbekannte Protokolle werden nicht implementiert.
 
-**Trennen** gibt die Verbindung frei. Beim Verlassen der App werden BLE-Suche/Verbindung und bestehende ANT+-Verbindungen beendet. Der externe ANT+-Suchdialog bleibt ausgenommen. Eine Bildschirmdrehung erfordert eine neue Suche. **Der neue BLE-Weg ist noch nicht am Xiaomi/Matrix ICR50 getestet.**
+**Trennen** gibt die Verbindung frei. Beim Verlassen der App werden BLE-Suche/Verbindung und bestehende ANT+-Verbindungen beendet. Der externe ANT+-Suchdialog bleibt ausgenommen. Eine Bildschirmdrehung erfordert eine neue Suche. **BLE FTMS wurde am 12.10.2026 vom Nutzer auf Xiaomi/Android 16 mit dem Matrix ICR50 erfolgreich getestet:** Leistung, Trittfrequenz, Geschwindigkeit, Distanz und Trainingszeit werden empfangen. [Hardware-Testbericht](docs/ICR50-BLE-Test.md).
 
 ## Entwickeln
 
@@ -74,7 +74,7 @@ Das Setup legt JDK und Android-Werkzeuge ausschließlich unter `/workspace` ab u
 - `TrainerSnapshot`: Messwerte und Empfangsstatus ohne Android-Abhängigkeiten.
 - `MainActivity`: einfache Testoberfläche und kopierbarer Diagnosebericht.
 
-Nach einem erfolgreichen Hardwaretest können Client und Datenmodell in B-Cycle übernommen werden. Der Client erwartet eine Activity für den Suchdialog und muss beim Beenden geschlossen werden. Die ANT+-Bibliothek und Manifest-Paketsichtbarkeit werden ebenfalls benötigt.
+Der BLE-Hardwaretest ist erfolgreich; Client und Datenmodell können für die BLE-FTMS-Anbindung in B-Cycle übernommen werden. Der BLE-Client benötigt Bluetooth-Berechtigungen und muss beim Beenden geschlossen werden. Nur für den separaten ANT+-Weg werden die ANT+-Bibliothek und Manifest-Paketsichtbarkeit benötigt. Die Integration in B-Cycle wurde noch nicht ausgeführt.
 
 ## ANT+-SDK
 

@@ -10,7 +10,7 @@ Die App zeigt die GATT-Dienste und empfängt unterstützte FTMS-Indoor-Bike-, Cy
 
 ANT+-Profile und Dienstdiagnose aus 0.1.1 bleiben verfügbar. BLE benötigt keinen ANT Radio Service und keinen ANT+ Plugins Service.
 
-Geprüft am 12.10.2026: Build, **24 JVM-Tests** ohne Fehler/übersprungene Tests, Android Lint ohne Befunde, APK-Signatur. Der BLE-Hardwaretest auf dem Xiaomi/ICR50 steht noch aus.
+Geprüft am 12.10.2026: Build, **24 JVM-Tests** ohne Fehler/übersprungene Tests, Android Lint ohne Befunde, APK-Signatur. **Der Nutzer hat den BLE-Hardwaretest auf Xiaomi/Android 16 mit dem ICR50 erfolgreich bestätigt:** Live-Leistung, Trittfrequenz, Geschwindigkeit, Distanz und Trainingszeit. [Hardware-Testbericht](../docs/ICR50-BLE-Test.md).
 
 SHA-256: `719637a6ad11d10d492374abbe399498eeaf03e552a01f4c4194e2d67a5cdfb5`
 
