@@ -27,7 +27,7 @@ class AntTrainerClient(
     var snapshot = TrainerSnapshot()
         private set
 
-    fun connect(profile: AntProfile) {
+    fun connect(profile: ConnectionProfile) {
         release()
         val session = generation
         snapshot = TrainerSnapshot(profile = profile, active = true, searching = true,
@@ -40,7 +40,8 @@ class AntTrainerClient(
         }
         try {
             handle = when (profile) {
-                AntProfile.FITNESS -> AntPlusFitnessEquipmentPcc.requestNewOpenAccess(
+                ConnectionProfile.BLE -> error("Bluetooth LE requires BleTrainerClient")
+                ConnectionProfile.FITNESS -> AntPlusFitnessEquipmentPcc.requestNewOpenAccess(
                     activity, activity, true, -1,
                     AntPluginPcc.IPluginAccessResultReceiver { pcc, result, state ->
                         dispatch(session) {
@@ -64,7 +65,7 @@ class AntTrainerClient(
                         }
                     }
                 )
-                AntProfile.POWER -> AntPlusBikePowerPcc.requestAccess(
+                ConnectionProfile.POWER -> AntPlusBikePowerPcc.requestAccess(
                     activity, activity, true, -1,
                     AntPluginPcc.IPluginAccessResultReceiver { pcc, result, state ->
                         dispatch(session) {

@@ -1,10 +1,13 @@
 package de.titanyus.antplusexplorer
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.graphics.Color
 import android.os.Bundle
@@ -29,6 +32,10 @@ import java.util.Locale
 @android.annotation.SuppressLint("SetTextI18n")
 class MainActivity : Activity() {
     private lateinit var client: AntTrainerClient
+    private lateinit var ble: BleTrainerClient
+    private lateinit var bleDevices: ArrayAdapter<BleDeviceChoice>
+    private var bleDialog: AlertDialog? = null
+    private var current = TrainerSnapshot()
     private lateinit var profile: Spinner
     private lateinit var connect: Button
     private lateinit var disconnect: Button
@@ -43,7 +50,7 @@ class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private val ticker = object : Runnable {
         override fun run() {
-            render(client.snapshot)
+            render(current)
             handler.postDelayed(this, 1_000)
         }
     }
@@ -71,9 +78,10 @@ class MainActivity : Activity() {
         }
         text("ANT+ Explorer", 28f)
         text("Matrix ICR50 · Verbindungstest", 18f)
-        text("Trainer aktivieren und treten. Profil wählen, Suche starten und das passende Gerät im ANT+-Dialog auswählen.")
+        text("Trainer aktivieren und treten. ANT+ oder Bluetooth LE wählen. Für den BLE-Test Wahoo und Jepster vorher vom Trainer trennen; dann JFICycle in der Geräteliste auswählen.")
         services = AntServices.summary(this)
         servicesView = text(services, 14f)
+        text("ANT-Dienste werden nur für die ANT+-Modi benötigt. Bluetooth LE funktioniert ohne diese Dienste.", 14f)
         for ((packageName, label) in listOf(AntServices.RADIO to "ANT Radio", AntServices.PLUGINS to "ANT+ Plugins")) {
             Button(this).apply {
                 this.text = "$label · App-Einstellungen"
@@ -89,33 +97,40 @@ class MainActivity : Activity() {
         }
         profile = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
-                AntProfile.entries.map { it.label })
-            setSelection(savedInstanceState?.getInt("profile") ?: 0)
+                ConnectionProfile.entries.map { it.label })
+            setSelection(savedInstanceState?.getInt("profile") ?: ConnectionProfile.BLE.ordinal)
             content.addView(this)
         }
         connect = Button(this).apply {
             text = "Trainer suchen / verbinden"
             content.addView(this)
-            setOnClickListener { client.connect(AntProfile.entries[profile.selectedItemPosition]) }
+            setOnClickListener {
+                val selected = ConnectionProfile.entries[profile.selectedItemPosition]
+                if (selected == ConnectionProfile.BLE) startBle() else client.connect(selected)
+            }
         }
         disconnect = Button(this).apply {
             text = "Trennen / Suche abbrechen"
             content.addView(this)
-            setOnClickListener { client.disconnect() }
+            setOnClickListener {
+                if (current.profile == ConnectionProfile.BLE) ble.disconnect() else client.disconnect()
+                bleDialog?.dismiss()
+                bleDialog = null
+            }
         }
         status = text("", 18f)
         device = text("")
         reception = text("")
         values = text("", 22f)
         text("— = nicht empfangen oder vom Gerät als ungültig gemeldet. Fahrradleistung liefert hier nur Watt und Trittfrequenz.", 14f)
-        text("Falls kein Gerät erscheint: ANT+-Übertragung an der Konsole prüfen, andere Trainingsapps schließen und das zweite Profil testen. Installierte Dienste allein belegen noch keine ANT+-Hardware oder Trainer-Kompatibilität.", 14f)
+        text("Ein BLE-Gerätename allein bestätigt noch keine Trainingsdaten. Der Bericht zeigt Datendienste und empfangene Werte. Bei ANT+ belegen installierte Dienste allein noch keine ANT+-Hardware oder Trainer-Kompatibilität.", 14f)
         Button(this).apply {
             text = "Testbericht kopieren"
             content.addView(this)
             setOnClickListener {
-                val report = "ANT+ Explorer 0.1.1 · Matrix ICR50\nAndroid ${android.os.Build.VERSION.RELEASE}\n" +
+                val report = "ANT+ Explorer 0.1.2 · Matrix ICR50\nAndroid ${android.os.Build.VERSION.RELEASE}\n" +
                     "Hersteller/Modell: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}\n$services\n" +
-                    "Profil: ${client.snapshot.profile.label}\n${status.text}\n${device.text}\n" +
+                    "Profil: ${current.profile.label}\n${status.text}\n${device.text}\n" +
                     "${reception.text}\n${values.text}\n\n${logView.text}"
                 getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("ANT+-Test", report))
                 Toast.makeText(this@MainActivity, "Testbericht kopiert", Toast.LENGTH_SHORT).show()
@@ -124,11 +139,18 @@ class MainActivity : Activity() {
         text("Diagnose", 18f)
         logView = text("", 12f).apply { setTextIsSelectable(true) }
         client = AntTrainerClient(this, ::render, ::log)
+        bleDevices = ArrayAdapter(this, android.R.layout.simple_list_item_1)
+        ble = BleTrainerClient(this, ::render, { devices ->
+            bleDevices.clear()
+            bleDevices.addAll(devices)
+            bleDialog?.setTitle("BLE-Geräte (${devices.size}) · auswählen")
+        }, ::log)
         log("App gestartet · Verbindung wird beim Verlassen beendet; Drehung erfordert eine neue Suche")
-        render(client.snapshot)
+        render(TrainerSnapshot(profile = ConnectionProfile.entries[profile.selectedItemPosition]))
     }
 
     private fun render(state: TrainerSnapshot) {
+        current = state
         connect.isEnabled = !state.active
         profile.isEnabled = !state.active
         disconnect.isEnabled = state.active
@@ -146,6 +168,45 @@ class MainActivity : Activity() {
             "Trainer-Zeit: ${metric(state.elapsedSeconds, "s")}"
         if (state.active) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    private fun startBle() {
+        val permissions = arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        if (permissions.any { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) {
+            requestPermissions(permissions, 100)
+            return
+        }
+        ble.scan()
+        if (!ble.snapshot.active) return
+        bleDialog = AlertDialog.Builder(this)
+            .setTitle("BLE-Geräte · Suche läuft")
+            .setAdapter(bleDevices) { _, index ->
+                val selected = bleDevices.getItem(index)
+                bleDialog = null
+                if (selected != null) ble.connect(selected)
+            }
+            .setNegativeButton("Abbrechen") { _, _ ->
+                bleDialog = null
+                ble.disconnect("BLE-Suche abgebrochen")
+            }
+            .create().apply {
+                setOnCancelListener {
+                    bleDialog = null
+                    ble.disconnect("BLE-Suche abgebrochen")
+                }
+                show()
+            }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 100) {
+            if (grantResults.size == 2 && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) startBle()
+            else {
+                log("Bluetooth-Suche und Verbindung benötigen die Android-Berechtigung Geräte in der Nähe")
+                Toast.makeText(this, "Bitte Geräte in der Nähe erlauben", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun log(message: String) {
@@ -168,6 +229,9 @@ class MainActivity : Activity() {
 
     override fun onStop() {
         handler.removeCallbacks(ticker)
+        bleDialog?.dismiss()
+        bleDialog = null
+        if (ble.snapshot.active) ble.disconnect("App verlassen · Bluetooth LE getrennt")
         // The ANT+ picker is an external Activity: keep its pending request alive.
         if (!client.snapshot.searching && client.snapshot.active) client.disconnect("App verlassen · Verbindung getrennt")
         super.onStop()
@@ -181,6 +245,7 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         handler.removeCallbacks(ticker)
         client.disconnect("Activity beendet · ANT+-Kanal freigegeben")
+        ble.disconnect("Activity beendet · Bluetooth LE freigegeben")
         super.onDestroy()
     }
 

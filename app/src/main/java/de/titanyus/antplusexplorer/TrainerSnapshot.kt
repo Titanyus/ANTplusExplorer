@@ -2,14 +2,15 @@ package de.titanyus.antplusexplorer
 
 import java.util.Locale
 
-enum class AntProfile(val label: String) {
-    FITNESS("Fitness Equipment (FE / FE-C)"),
-    POWER("Fahrradleistung (Bicycle Power)")
+enum class ConnectionProfile(val label: String) {
+    FITNESS("ANT+ Fitness Equipment (FE / FE-C)"),
+    POWER("ANT+ Fahrradleistung (Bicycle Power)"),
+    BLE("Bluetooth LE · JFICycle / iTrack prüfen")
 }
 
 /** UI-independent state, reusable in B-Cycle. Missing/invalid values stay null. */
 data class TrainerSnapshot(
-    val profile: AntProfile = AntProfile.FITNESS,
+    val profile: ConnectionProfile = ConnectionProfile.FITNESS,
     val active: Boolean = false,
     val searching: Boolean = false,
     val tracking: Boolean = false,
