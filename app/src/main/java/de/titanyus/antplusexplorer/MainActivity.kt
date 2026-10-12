@@ -3,12 +3,15 @@ package de.titanyus.antplusexplorer
 import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.pm.PackageManager
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.provider.Settings
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.ArrayAdapter
@@ -35,6 +38,7 @@ class MainActivity : Activity() {
     private lateinit var values: TextView
     private lateinit var logView: TextView
     private lateinit var services: String
+    private lateinit var servicesView: TextView
     private val lines = ArrayDeque<String>()
     private val handler = Handler(Looper.getMainLooper())
     private val ticker = object : Runnable {
@@ -68,9 +72,21 @@ class MainActivity : Activity() {
         text("ANT+ Explorer", 28f)
         text("Matrix ICR50 · Verbindungstest", 18f)
         text("Trainer aktivieren und treten. Profil wählen, Suche starten und das passende Gerät im ANT+-Dialog auswählen.")
-        services = "${serviceInfo("com.dsi.ant.service.socket", "ANT Radio Service")}\n" +
-            serviceInfo("com.dsi.ant.plugins.antplus", "ANT+ Plugins Service")
-        text(services, 14f)
+        services = AntServices.summary(this)
+        servicesView = text(services, 14f)
+        for ((packageName, label) in listOf(AntServices.RADIO to "ANT Radio", AntServices.PLUGINS to "ANT+ Plugins")) {
+            Button(this).apply {
+                this.text = "$label · App-Einstellungen"
+                content.addView(this)
+                setOnClickListener {
+                    try {
+                        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                    } catch (_: ActivityNotFoundException) {
+                        Toast.makeText(this@MainActivity, "App-Einstellungen nicht verfügbar", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
         profile = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
                 AntProfile.entries.map { it.label })
@@ -97,7 +113,7 @@ class MainActivity : Activity() {
             text = "Testbericht kopieren"
             content.addView(this)
             setOnClickListener {
-                val report = "ANT+ Explorer 0.1.0 · Matrix ICR50\nAndroid ${android.os.Build.VERSION.RELEASE}\n" +
+                val report = "ANT+ Explorer 0.1.1 · Matrix ICR50\nAndroid ${android.os.Build.VERSION.RELEASE}\n" +
                     "Hersteller/Modell: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}\n$services\n" +
                     "Profil: ${client.snapshot.profile.label}\n${status.text}\n${device.text}\n" +
                     "${reception.text}\n${values.text}\n\n${logView.text}"
@@ -110,13 +126,6 @@ class MainActivity : Activity() {
         client = AntTrainerClient(this, ::render, ::log)
         log("App gestartet · Verbindung wird beim Verlassen beendet; Drehung erfordert eine neue Suche")
         render(client.snapshot)
-    }
-
-    private fun serviceInfo(packageName: String, label: String): String = try {
-        val info = packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-        "$label: installiert (${info.versionName})"
-    } catch (_: PackageManager.NameNotFoundException) {
-        "$label: nicht gefunden"
     }
 
     private fun render(state: TrainerSnapshot) {
@@ -149,6 +158,12 @@ class MainActivity : Activity() {
     override fun onStart() {
         super.onStart()
         handler.post(ticker)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        services = AntServices.summary(this)
+        servicesView.text = services
     }
 
     override fun onStop() {

@@ -34,6 +34,7 @@ class AntTrainerClient(
             status = "Gerätesuche geöffnet · bitte den Matrix auswählen")
         emit()
         onLog("Suche: ${profile.label}")
+        onLog(AntServices.summary(activity))
         val stateReceiver = AntPluginPcc.IDeviceStateChangeReceiver { state ->
             dispatch(session) { deviceState(state) }
         }
@@ -130,7 +131,7 @@ class AntTrainerClient(
     private fun accessFailed(result: RequestAccessResult) {
         val explanation = when (result) {
             RequestAccessResult.ADAPTER_NOT_DETECTED -> "Kein ANT-Adapter erkannt. ANT-Hardware oder USB-ANT-Stick prüfen."
-            RequestAccessResult.DEPENDENCY_NOT_INSTALLED -> "ANT Radio Service und ANT+ Plugins Service installieren/aktualisieren."
+            RequestAccessResult.DEPENDENCY_NOT_INSTALLED -> AntServices.missingDependency(activity)
             RequestAccessResult.CHANNEL_NOT_AVAILABLE -> "Kein freier ANT-Kanal. Andere ANT+-Apps schließen."
             RequestAccessResult.SEARCH_TIMEOUT -> "Kein Gerät gefunden. Treten, ANT+-Übertragung am Trainer aktivieren oder anderes Profil testen."
             RequestAccessResult.USER_CANCELLED -> "Gerätesuche abgebrochen."

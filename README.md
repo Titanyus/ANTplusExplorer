@@ -4,9 +4,9 @@ Sehr kleine Kotlin-Testapp für **Android 13+** und einen **Matrix ICR50**. Wie 
 
 ## APK installieren und testen
 
-[APK herunterladen](https://github.com/Titanyus/ANTplusExplorer/raw/refs/heads/main/downloads/ANTplusExplorer-0.1.0-debug.apk)
+[APK herunterladen](https://github.com/Titanyus/ANTplusExplorer/raw/refs/heads/main/downloads/ANTplusExplorer-0.1.1-debug.apk)
 
-Die APK ist eine signierte Debug-Testversion (0.1.0), keine Play-Store-Veröffentlichung. Android muss die Installation aus dem verwendeten Browser/Dateimanager erlauben. Prüfsumme: siehe `downloads/SHA256SUMS`.
+Die APK ist eine signierte Debug-Testversion (0.1.1), keine Play-Store-Veröffentlichung. Android muss die Installation aus dem verwendeten Browser/Dateimanager erlauben. Prüfsumme: siehe `downloads/SHA256SUMS`.
 
 1. ANT Radio Service und ANT+ Plugins Service auf dem Smartphone installieren bzw. aktualisieren. Die App zeigt deren erkannte Versionen. ANT+-fähige Hardware wird zusätzlich benötigt; installierte Dienste allein reichen nicht. Dein bereits erfolgreich verwendetes ANT+-Setup ist dafür der Ausgangspunkt.
 2. ICR50/Konsole aufwecken, treten und eine eventuell vorhandene ANT+-Übertragung aktivieren. Andere Trainingsapps für den ersten Test schließen.
@@ -15,6 +15,15 @@ Die APK ist eine signierte Debug-Testversion (0.1.0), keine Play-Store-Veröffen
 5. Nach der Geräteauswahl weiter treten. Erfolg bedeutet: **Verbunden**, **Live-Daten empfangen**, fortlaufende Ereignisse und plausible, auf verändertes Treten reagierende Werte. Ein ausgewähltes Gerät oder der Status „Verbunden“ allein beweist noch keinen Messdatenempfang.
 6. **Testbericht kopieren** drücken und den Bericht für die spätere B-Cycle-Integration aufbewahren. Besonders interessant: Smartphone, Dienste-Versionen, Profil, ANT-Geräte-ID, Gerätetyp und welche Messwerte tatsächlich vorhanden sind.
 7. **Trennen** beendet den Zugriff und gibt den ANT+-Kanal frei. Beim Verlassen der App wird eine bestehende Verbindung beendet. Der externe ANT+-Suchdialog darf geöffnet bleiben. Eine Bildschirmdrehung beendet die Sitzung; anschließend erneut suchen.
+
+## Dienst wird trotz Installation beanstandet
+
+ANT+ Plugins Service und ANT Radio Service sind **separate Apps**. Beide müssen im selben Android-Profil wie ANT+ Explorer vorhanden und aktiviert sein. Der Play Store kann ein Paket als installiert anzeigen, obwohl der andere Dienst fehlt oder das Paket in einem anderen Benutzer-/Arbeitsprofil liegt.
+
+- [ANT Radio Service im Play Store](https://play.google.com/store/apps/details?id=com.dsi.ant.service.socket)
+- [ANT+ Plugins Service im Play Store](https://play.google.com/store/apps/details?id=com.dsi.ant.plugins.antplus)
+
+Ab 0.1.1 meldet die App die konkret vom ANT-SDK beanstandete Abhängigkeit mit Paketname und unterscheidet „nicht gefunden“, „deaktiviert“ und „installiert, aber vom SDK nicht nutzbar“. Die App-Einstellungen sind direkt erreichbar. Der Testbericht enthält Versionscodes und die Paketerkennung des ANT-SDKs. Nach einer Installation/Aktivierung zur App zurückkehren und erneut suchen. Ist das Paket installiert und aktiviert, bitte den neuen Diagnosebericht zur weiteren Analyse verwenden.
 
 ## Was wird getestet?
 
